@@ -117,40 +117,37 @@ This view is ideal for understanding the timeline of incidents and reviewing wha
 
 ## Architecture
 
-```
-                        +-------------------+
-                        |      User         |
-                        |    (Browser)      |
-                        +--------+----------+
-                                 |
-                            port 3000
-                                 |
-                  +--------------v--------------+
-                  |         Frontend             |
-                  |     (React + nginx)          |
-                  |                              |
-                  |  /          -> index.html    |
-                  |  /api/*     -> proxy backend |
-                  |  /static/*  -> cached assets |
-                  +--------------+--------------+
-                                 |
-                        Docker internal network
-                        (cloud-status network)
-                                 |
-                  +--------------v--------------+
-                  |          Backend             |
-                  |    (Node.js + Express)       |
-                  |                              |
-                  |  In-memory cache             |
-                  |  Cron job (every 5 min)      |
-                  +-----+----------+--------+---+
-                        |          |        |
-            +-----------v--+  +----v------+ +--v-----------+
-            |  AWS APIs     |  | Azure APIs| | GCP APIs     |
-            |               |  |           | |              |
-            | currentevents |  | status pg | | incidents    |
-            | RSS feed      |  | RSS feed  | | Atom feed    |
-            +---------------+  +-----------+ +--------------+
+```mermaid
+flowchart TD
+    User["👤 User\n(Browser)"]
+
+    subgraph Docker["☁️ Docker Compose Network"]
+        direction TB
+        Frontend["🖥️ Frontend\n(React + nginx)\n\n/ → index.html\n/api/* → proxy backend\n/static/* → cached assets"]
+        Backend["⚙️ Backend\n(Node.js + Express)\n\nIn-memory cache\nCron job · every 5 min"]
+    end
+
+    subgraph APIs["External APIs"]
+        direction LR
+        AWS["🟠 AWS APIs\n\ncurrentevents\nRSS feed"]
+        Azure["🔵 Azure APIs\n\nstatus page\nRSS feed"]
+        GCP["🟢 GCP APIs\n\nincidents.json\nAtom feed"]
+    end
+
+    User -- "port 3000" --> Frontend
+    Frontend -- "Docker internal\nnetwork" --> Backend
+    Backend --> AWS
+    Backend --> Azure
+    Backend --> GCP
+
+    style User fill:#1a1a2e,stroke:#e94560,color:#eee
+    style Frontend fill:#16213e,stroke:#0f3460,color:#eee
+    style Backend fill:#16213e,stroke:#0f3460,color:#eee
+    style AWS fill:#2d1b00,stroke:#ff9900,color:#ff9900
+    style Azure fill:#0a1929,stroke:#0078d4,color:#0078d4
+    style GCP fill:#0a2910,stroke:#4285f4,color:#34a853
+    style Docker fill:#0d1117,stroke:#30363d,color:#8b949e
+    style APIs fill:#0d1117,stroke:#30363d,color:#8b949e
 ```
 
 **Data flow:**
